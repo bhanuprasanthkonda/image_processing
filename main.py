@@ -89,7 +89,7 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
     j = 0
     if i > 0:
         boarders = []
-        min_maxs = []
+        min_maxes = []
         list_of_stones = []
         while j < dim[1]:
             if image[i][j] == 255:
@@ -98,9 +98,9 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
                 list_of_stones.append((i, j))
                 j = print_stone(image, i, j, new_image, boarder, min_max)
                 boarders.append(boarder)
-                min_maxs.append(min_max)
+                min_maxes.append(min_max)
             j += 1
-        return list_of_stones, boarders, min_maxs, new_image
+        return list_of_stones, boarders, min_maxes, new_image
     else:
         while j < dim[1]:
             for i in range(dim[0]):
@@ -115,13 +115,14 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
 def embedment(image, location_of_stones):
     list_of_embedment = []
     l = len(list_of_embedment)
-    for xmin, xmax, ymin, ymax in location_of_stones:
-        for i in range(xmin, xmax + 1):
-            for j in range(ymin, ymax + 1):
+    for x_min, x_max, y_min, y_max in location_of_stones:
+        for i in range(x_min, x_max + 1):
+            for j in range(y_min, y_max + 1):
                 if 0 < image[i][j] < 255:
-                    list_of_embedment.append((ymax - j) / (ymax - ymin))
+                    list_of_embedment.append((y_max - j) / (y_max - y_min))
                     break
             if l != len(list_of_embedment):
+                l = len(list_of_embedment)
                 break
     return list_of_embedment
 
@@ -133,7 +134,7 @@ def write_image(filename, image):
     if cv2.imwrite(os.getcwd() + "/" + filename, image):
         print(filename, "written successful")
     else:
-        print(filename, " written failured")
+        print(filename, " written failed")
 
 
 # function waiting for to close all the tabs opened
@@ -177,10 +178,11 @@ def main():
 
     # separating the top layer of stones
     all_solid_stones = top_layer_stones(image_bw)
-    stones_coordinates, boarders, min_maxs, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
-    stones_embedment_percentage = embedment(top_layer, min_maxs)
+    stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
+    stones_embedment_percentage = embedment(top_layer, min_maxes)
 
-    print(stones_embedment_percentage)
+    for i, j in enumerate(stones_embedment_percentage):
+        print(i + 1, ":", j * 100, "%")
     show_image("result", top_layer)
 
     # writing the processed image to the file

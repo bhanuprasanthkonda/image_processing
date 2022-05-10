@@ -127,6 +127,27 @@ def embedment(image, location_of_stones):
     return list_of_embedment
 
 
+def write_on_image(image, pos, text):
+    # font
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    # org
+    org = pos
+
+    # fontScale
+    fontScale = 0.45
+
+    # Blue color in BGR
+    color = (255, 0, 0)
+
+    # Line thickness of 2 px
+    thickness = 2
+
+    # Using cv2.putText() method
+    return cv2.putText(image, str(text), org, font,
+                       fontScale, color, thickness, cv2.LINE_AA)
+
+
 # to write the image
 def write_image(filename, image):
     if filename[-4:] != ".png":
@@ -180,8 +201,15 @@ def main():
     all_solid_stones = top_layer_stones(image_bw)
     stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
     stones_embedment_percentage = embedment(top_layer, min_maxes)
-
+    top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
     for i, j in enumerate(stones_embedment_percentage):
+        x, y = 0, 0
+        for m, n in boarders[i]:
+            x += m
+            y += n
+        x //= len(boarders[i])
+        y //= len(boarders[i])
+        top_layer = write_on_image(top_layer, (y, x), str(j)[:5])
         print(i + 1, ":", j * 100, "%")
     show_image("result", top_layer)
 

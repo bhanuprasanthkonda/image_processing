@@ -55,6 +55,34 @@ def image_sharpness(image):
     return image_sharp
 
 
+# area of the grey location
+def grey_area(image, new_image, x, y, delete=False):
+    result = 0
+    if delete:
+        image = new_image
+    if 0 <= x < image.shape[0] and 0 <= y < image.shape[1] and 0 < image[x][y] < 255:
+        temp = image[x][y]
+        image[x][y] = 0
+        new_image[x][y] = 0
+        result = 1 + grey_area(image, new_image, x, y + 1, delete) + grey_area(image, new_image, x, y - 1, delete) \
+                 + grey_area(image, new_image, x + 1, y, delete) + grey_area(image, new_image, x - 1, y, delete)
+        if not delete:
+            new_image[x][y] = temp
+    return result
+
+
+# removes tiny grey parts
+def remove_tiny_parts(image):
+    new_image = image.copy()
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            if 0 < image[x][y] < 255:
+                result = grey_area(image, new_image, x, y)
+                if result <= 0.001 * image.shape[0] * image.shape[1]:
+                    grey_area(image, new_image, x, y, True)
+    return new_image
+
+
 # writing the selected stone to a new_image
 def print_stone(image, i, j, new_image, boarder, min_max):
     max_j = j
@@ -114,15 +142,15 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
 # returns each stones embedment in a list
 def embedment(image, location_of_stones):
     list_of_embedment = []
-    l = len(list_of_embedment)
+    initial_len = len(list_of_embedment)
     for x_min, x_max, y_min, y_max in location_of_stones:
         for i in range(x_min, x_max + 1):
             for j in range(y_min, y_max + 1):
                 if 0 < image[i][j] < 255:
-                    list_of_embedment.append((y_max - j) / (y_max - y_min))
+                    list_of_embedment.append((x_max - i) / (x_max - x_min))
                     break
-            if l != len(list_of_embedment):
-                l = len(list_of_embedment)
+            if initial_len != len(list_of_embedment):
+                initial_len = len(list_of_embedment)
                 break
     return list_of_embedment
 
@@ -138,14 +166,13 @@ def write_on_image(image, pos, text):
     fontScale = 0.45
 
     # Blue color in BGR
-    color = (255, 0, 0)
+    color = (0, 0, 255)
 
     # Line thickness of 2 px
     thickness = 2
 
     # Using cv2.putText() method
-    return cv2.putText(image, str(text), org, font,
-                       fontScale, color, thickness, cv2.LINE_AA)
+    return cv2.putText(image, str(text), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
 # to write the image
@@ -178,7 +205,8 @@ def main():
         for j in range(dim[1]):
             stone_holding_part[i][j] = 123 if stone_holding_part[i][j] < 30 else 0
     stone_holding_part = image_sharpness(stone_holding_part)
-    show_image("temp", stone_holding_part)
+    stone_holding_part = remove_tiny_parts(stone_holding_part)
+    show_image("stone_holding_part", stone_holding_part)
 
     # enhancing the image to capture stones
     img = image_conversion(img, cv2.COLOR_BGR2RGB)
@@ -209,8 +237,9 @@ def main():
             y += n
         x //= len(boarders[i])
         y //= len(boarders[i])
-        top_layer = write_on_image(top_layer, (y, x), str(j)[:5])
-        print(i + 1, ":", j * 100, "%")
+        j *= 100
+        top_layer = write_on_image(top_layer, (y, x), str(j)[:5] + "%")
+        print(i + 1, ":", j, "%")
     show_image("result", top_layer)
 
     # writing the processed image to the file

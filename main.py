@@ -3,6 +3,8 @@ import numpy as np
 import sys
 import os
 
+from numpy import uint8
+
 sys.setrecursionlimit(1000000)
 
 
@@ -122,7 +124,7 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
         while j < dim[1]:
             if image[i][j] == 255:
                 boarder = []
-                min_max = [256, -1, 256, -1]
+                min_max = [float('inf'), -1, float('inf'), -1]
                 list_of_stones.append((i, j))
                 j = print_stone(image, i, j, new_image, boarder, min_max)
                 boarders.append(boarder)
@@ -142,37 +144,33 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
 # returns each stones embedment in a list
 def embedment(image, location_of_stones):
     list_of_embedment = []
+    lst = []
     initial_len = len(list_of_embedment)
     for x_min, x_max, y_min, y_max in location_of_stones:
         for i in range(x_min, x_max + 1):
             for j in range(y_min, y_max + 1):
                 if 0 < image[i][j] < 255:
+                    lst.append((j, i))
                     list_of_embedment.append((x_max - i) / (x_max - x_min))
                     break
             if initial_len != len(list_of_embedment):
                 initial_len = len(list_of_embedment)
                 break
-    return list_of_embedment
+    return list_of_embedment, lst
 
 
+# put text on the image
 def write_on_image(image, pos, text):
     # font
     font = cv2.FONT_HERSHEY_SIMPLEX
-
-    # org
-    org = pos
-
     # fontScale
     fontScale = 0.45
-
     # Blue color in BGR
     color = (0, 0, 255)
-
     # Line thickness of 2 px
     thickness = 2
-
     # Using cv2.putText() method
-    return cv2.putText(image, str(text), org, font, fontScale, color, thickness, cv2.LINE_AA)
+    return cv2.putText(image, str(text), pos, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
 # to write the image
@@ -191,20 +189,22 @@ def end_program():
     cv2.destroyAllWindows()
 
 
-def main():
-    img = read_image("img1.png")
+def main(img=None):
+    if img is None:
+        img = read_image("img1.png")
     img = image_scaling(img)
     show_image("image", img)
+    print(img.shape)
 
     # to process the black line around the stones
-    stone_holding_part = image_conversion(img, cv2.COLOR_BGR2GRAY)
-    show_image("temp1", stone_holding_part)
+    grey_scale_img = image_conversion(img, cv2.COLOR_BGR2GRAY)
+    show_image("grey_scale_img", grey_scale_img)
 
-    dim = stone_holding_part.shape
+    dim = grey_scale_img.shape
     for i in range(dim[0]):
         for j in range(dim[1]):
-            stone_holding_part[i][j] = 123 if stone_holding_part[i][j] < 30 else 0
-    stone_holding_part = image_sharpness(stone_holding_part)
+            grey_scale_img[i][j] = 123 if grey_scale_img[i][j] < 23 else 0
+    stone_holding_part = image_sharpness(grey_scale_img)
     stone_holding_part = remove_tiny_parts(stone_holding_part)
     show_image("stone_holding_part", stone_holding_part)
 
@@ -228,7 +228,7 @@ def main():
     # separating the top layer of stones
     all_solid_stones = top_layer_stones(image_bw)
     stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
-    stones_embedment_percentage = embedment(top_layer, min_maxes)
+    stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
@@ -238,7 +238,7 @@ def main():
         x //= len(boarders[i])
         y //= len(boarders[i])
         j *= 100
-        top_layer = write_on_image(top_layer, (y, x), str(j)[:5] + "%")
+        top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         print(i + 1, ":", j, "%")
     show_image("result", top_layer)
 
@@ -247,5 +247,47 @@ def main():
     end_program()
 
 
+# def dummy_photo():
+#     from random import randint
+#     img = read_image("img1.png")
+#     img = creating_empty_image(img.shape, img.dtype)
+#     print(img.shape)
+#     dimx, dimy, dimz = list(img.shape)
+#     for i in range(len(img) // 2):
+#         for j in range(len(img[0])):
+#             img[i][j] = [0, 0, 200]
+#     img = image_conversion(img, cv2.COLOR_BGR2RGB)
+#     lst = []
+#     count = 0
+#     for i in range(11):
+#         while count == len(lst):
+#             x, y = img.shape[0] // 2 - randint(5, 20), randint(0, img.shape[1])
+#             l, w = randint(10, 40), randint(10, 40)
+#             lst.append((x, y))
+#             for m in range(l):
+#                 for n in range(w):
+#                     if 0 <= x + m < dimx and 0 <= y + n < dimy:
+#                         img[x + m][y + n] = [179, 136, 0]
+#         count += 1
+#     for i in range(10):
+#         while count == len(lst):
+#             x, y = randint(img.shape[0] // 2 + 10, img.shape[0]), randint(0, img.shape[1])
+#             l, w = randint(10, 60), randint(10, 60)
+#             lst.append((x, y))
+#             for m in range(l):
+#                 for n in range(w):
+#                     if 0 <= x + m < dimx and 0 <= y + n < dimy:
+#                         img[x + m][y + n] = [179, 136, 0]
+#         count += 1
+#     show_image("kn", img)
+#     print(img.shape)
+#     # end_program()
+#     return img
+
+
 if __name__ == "__main__":
+    # main()
+    # img = dummy_photo()
+    # write_image("img2.png", img)
+    # show_image("dummy", img)
     main()

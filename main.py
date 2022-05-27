@@ -3,8 +3,6 @@ import numpy as np
 import sys
 import os
 
-from numpy import uint8
-
 sys.setrecursionlimit(1000000)
 
 
@@ -141,6 +139,17 @@ def top_layer_stones(image, new_image=None, selectTopStones=False):
         return new_image
 
 
+def overlap(img, toplayer):
+    print(img.shape, toplayer.shape)
+    dim = img.shape
+    for i in range(dim[0]):
+        for j in range(dim[1]):
+            if toplayer[i][j] == 255:
+                img[i][j] = [255, 255, 255]
+    show_image("overlap", img)
+    write_image("overlap", img)
+
+
 # returns each stones embedment in a list
 def embedment(image, location_of_stones):
     list_of_embedment = []
@@ -193,8 +202,9 @@ def main(img=None):
     if img is None:
         img = read_image("img1.png")
     img = image_scaling(img)
+    img_copy = img.copy()
     show_image("image", img)
-    print(img.shape)
+    # print(img.shape)
 
     # to process the black line around the stones
     grey_scale_img = image_conversion(img, cv2.COLOR_BGR2GRAY)
@@ -225,10 +235,14 @@ def main(img=None):
         for j in range(dim[1]):
             image_bw[i][j] = 255 if img[i][j] > threshold else 0
 
+    show_image("image_bw", image_bw)
+
     # separating the top layer of stones
     all_solid_stones = top_layer_stones(image_bw)
+    show_image("all_solid_stones", all_solid_stones)
     stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
     stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
+    overlap(img_copy, top_layer)
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
@@ -286,7 +300,6 @@ def main(img=None):
 
 
 if __name__ == "__main__":
-    # main()
     # img = dummy_photo()
     # write_image("img2.png", img)
     # show_image("dummy", img)

@@ -4,7 +4,7 @@ import sys
 import os
 from tkinter import *
 from tkinter import ttk, filedialog
-from tkinter.filedialog import askopenfile
+from PIL import ImageTk, Image
 
 sys.setrecursionlimit(1000000)
 
@@ -260,13 +260,13 @@ def main(img=None):
         j *= 100
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         print(i + 1, ":", j, "%")
-        report.append(str(i + 1) + ":" + str(j) + "%")
+        report.append(str(i + 1) + ":" + str(j)[:5] + "%")
     show_image("result", top_layer)
 
     # writing the processed image to the file
     write_image("result", top_layer)
     end_program()
-    return report
+    return top_layer, report
 
 
 # def dummy_photo():
@@ -309,8 +309,9 @@ def main(img=None):
 
 def GUI():
     root = Tk()
-    root.geometry("700x350")
-    Label(root, text="Image File:").grid(row=0, column=0)
+    root.title("Image_Processing")
+    root.geometry("500x350")
+    Label(root, text="Please select the file using the browse option", justify="center").grid(row=0, column=0)
 
     def open_file():
 
@@ -318,20 +319,29 @@ def GUI():
         filepath = ""
         if file:
             filepath = os.path.abspath(file.name)
-            Label(root, text=str(filepath), font=('Aerial 11')).grid(row=0, column=1)
+            Label(root, text=("Selected file: " + str(filepath)), font='Aerial 11').grid(row=0, column=0)
             filepath = str(filepath)
 
-        def Analyze():
-            report = main(filepath)
-            string = "\n".join(report)
-            Label(root, text=string, font=('Aerial 11')).grid(row=5, column=0)
+        def resultImg():
+            show_image("Result (Press any key to close)", final_img)
+            end_program()
 
+        def Analyze():
+            global final_img
+            final_img, report = main(filepath)
+            string = "\n".join(report)
+            Label(root, text=string, font='Aerial 11', justify="left").grid(row=6, column=0)
+            Button(root, text="Result", command=resultImg).grid(row=5, column=0)
+
+        def Preview():
+            show_image("Preview (Press any key to close)", read_image(filepath))
+            end_program()
 
         if filepath:
-            Button(root, text="Analyse", command=Analyze).grid(row=2, column=0)
+            Button(root, text="Preview", command=Preview).grid(row=2, column=0)
+            Button(root, text="Analyse", command=Analyze).grid(row=3, column=0)
 
     Button(root, text="Browse", command=open_file).grid(row=1, column=0)
-    # Button(root, text="Analyse", command=myClick).grid(row=2, column=0)
 
     root.mainloop()
 

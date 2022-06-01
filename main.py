@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import sys
 import os
+from tkinter import *
+from tkinter import ttk, filedialog
+from tkinter.filedialog import askopenfile
 
 sys.setrecursionlimit(1000000)
 
@@ -199,8 +202,10 @@ def end_program():
 
 
 def main(img=None):
+    # print(img)
     if img is None:
-        img = read_image("img1.png")
+        img = "img1.png"
+    img = read_image(img)
     img = image_scaling(img)
     img_copy = img.copy()
     show_image("image", img)
@@ -244,6 +249,7 @@ def main(img=None):
     stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
     overlap(img_copy, top_layer)
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
+    report = []
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
         for m, n in boarders[i]:
@@ -254,11 +260,13 @@ def main(img=None):
         j *= 100
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         print(i + 1, ":", j, "%")
+        report.append(str(i + 1) + ":" + str(j) + "%")
     show_image("result", top_layer)
 
     # writing the processed image to the file
     write_image("result", top_layer)
     end_program()
+    return report
 
 
 # def dummy_photo():
@@ -299,8 +307,38 @@ def main(img=None):
 #     return img
 
 
+def GUI():
+    root = Tk()
+    root.geometry("700x350")
+    Label(root, text="Image File:").grid(row=0, column=0)
+
+    def open_file():
+
+        file = filedialog.askopenfile(mode='r')
+        filepath = ""
+        if file:
+            filepath = os.path.abspath(file.name)
+            Label(root, text=str(filepath), font=('Aerial 11')).grid(row=0, column=1)
+            filepath = str(filepath)
+
+        def Analyze():
+            report = main(filepath)
+            string = "\n".join(report)
+            Label(root, text=string, font=('Aerial 11')).grid(row=5, column=0)
+
+
+        if filepath:
+            Button(root, text="Analyse", command=Analyze).grid(row=2, column=0)
+
+    Button(root, text="Browse", command=open_file).grid(row=1, column=0)
+    # Button(root, text="Analyse", command=myClick).grid(row=2, column=0)
+
+    root.mainloop()
+
+
 if __name__ == "__main__":
     # img = dummy_photo()
     # write_image("img2.png", img)
     # show_image("dummy", img)
-    main()
+    GUI()
+    # main()

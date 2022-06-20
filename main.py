@@ -3,11 +3,12 @@ import numpy as np
 import sys
 import os
 from tkinter import *
-from tkinter import ttk, filedialog
+from tkinter import filedialog
 from PIL import ImageTk, Image
 
 sys.setrecursionlimit(1000000)
 
+Debug = False
 
 # reads the image from the filepath
 def read_image(filepath):
@@ -16,7 +17,8 @@ def read_image(filepath):
 
 # show the image
 def show_image(window_name, image):
-    cv2.imshow(window_name, image)
+    if Debug:
+        cv2.imshow(window_name, image)
 
 
 # returns a converted image
@@ -197,8 +199,9 @@ def write_image(filename, image):
 
 # function waiting for to close all the tabs opened
 def end_program():
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    if Debug:
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
 def main(img=None):
@@ -214,6 +217,7 @@ def main(img=None):
     # to process the black line around the stones
     grey_scale_img = image_conversion(img, cv2.COLOR_BGR2GRAY)
     show_image("grey_scale_img", grey_scale_img)
+    # progress("*" * 2 + " 10% Complete")
 
     dim = grey_scale_img.shape
     for i in range(dim[0]):
@@ -222,6 +226,7 @@ def main(img=None):
     stone_holding_part = image_sharpness(grey_scale_img)
     stone_holding_part = remove_tiny_parts(stone_holding_part)
     show_image("stone_holding_part", stone_holding_part)
+    # progress("**" * 2 + " 20% Complete")
 
     # enhancing the image to capture stones
     img = image_conversion(img, cv2.COLOR_BGR2RGB)
@@ -229,6 +234,7 @@ def main(img=None):
     img = image_sharpness(img)
     img = image_conversion(img, cv2.COLOR_BGR2GRAY)
     show_image("black", img)
+    # progress("***" * 2 + " 30% Complete")
 
     # converting the image into black and white based on a threshold
     dim = img.shape
@@ -241,14 +247,19 @@ def main(img=None):
             image_bw[i][j] = 255 if img[i][j] > threshold else 0
 
     show_image("image_bw", image_bw)
+    # progress("****" * 2 + " 40% Complete")
 
     # separating the top layer of stones
     all_solid_stones = top_layer_stones(image_bw)
     show_image("all_solid_stones", all_solid_stones)
+    # progress("*****" * 2 + " 50% Complete")
     stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
+    # progress("*******" * 2 + " 70% Complete")
     stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
     overlap(img_copy, top_layer)
+    # progress("********" * 2 + " 80% Complete")
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
+    # progress("*********" * 2 + " 90% Complete")
     report = []
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
@@ -260,8 +271,9 @@ def main(img=None):
         j *= 100
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         print(i + 1, ":", j, "%")
-        report.append(str(i + 1) + ":" + str(j)[:5] + "%")
+        report.append(str(i + 1) + " : " + str(j)[:5] + "%")
     show_image("result", top_layer)
+    # progress("**********" * 2 + " 100% Complete")
 
     # writing the processed image to the file
     write_image("result", top_layer)
@@ -309,41 +321,87 @@ def main(img=None):
 
 def GUI():
     root = Tk()
-    root.title("Image_Processing")
-    root.geometry("500x350")
-    Label(root, text="Please select the file using the browse option", justify="center").grid(row=0, column=0)
+    try:
+        root.title("Image_Processing")
+        root.geometry("800x700")
+        text = StringVar()
+        text.set("Please select the file using the browse option")
+        L1 = Label(root, textvariable=text, justify="center")
+        L1.grid(row=0, column=1)
+        label1 = None
 
-    def open_file():
+        def open_file():
+            global label1
+            file = filedialog.askopenfile(mode='r')
+            filepath = ""
+            if file:
+                filepath = os.path.abspath(file.name)
+                text.set("Selected file: " + str(filepath))
+                # L1.grid(row=0, column=0)
+                filepath = str(filepath)
+                image1 = Image.open(filepath)
+                scale_percent = 2000 / image1.width
+                image1 = image1.resize(
+                    (int(image1.width * scale_percent * 0.35), int(0.35 * image1.height * scale_percent)),
+                    Image.ANTIALIAS)
+                test = ImageTk.PhotoImage(image1)
+                try:
+                    label1.configure(image=test)
+                    label1.image = test
+                except:
+                    label1 = Label(image=test, justify="center")
+                    label1.image = test
+                label1.grid(row=2, column=0, columnspan=3)
 
-        file = filedialog.askopenfile(mode='r')
-        filepath = ""
-        if file:
-            filepath = os.path.abspath(file.name)
-            Label(root, text=("Selected file: " + str(filepath)), font='Aerial 11').grid(row=0, column=0)
-            filepath = str(filepath)
+            def resultImg():
+                show_image("Result (Press any key to close)", final_img)
+                end_program()
 
-        def resultImg():
-            show_image("Result (Press any key to close)", final_img)
-            end_program()
+            # def GUI_ProgressBar(text):
+            #     return
+            #     Label(root, text=text, font='Aerial 12', justify="left").grid(row=6, column=0)
 
-        def Analyze():
-            global final_img
-            final_img, report = main(filepath)
-            string = "\n".join(report)
-            Label(root, text=string, font='Aerial 11', justify="left").grid(row=6, column=0)
-            Button(root, text="Result", command=resultImg).grid(row=5, column=0)
+            def Analyze():
+                global final_img
+                final_img, report = main(filepath)
+                f_img = Image.open("result.png")
+                scale_percent = 2000 / f_img.width
+                image2 = f_img.resize(
+                    (int(f_img.width * scale_percent * 0.35), int(0.35 * f_img.height * scale_percent)),
+                    Image.ANTIALIAS)
+                f_test = ImageTk.PhotoImage(image2)
+                try:
+                    label2.configure(image=f_test)
+                    label2.image = f_test
+                except:
+                    label2 = Label(image=f_test, justify="center")
+                    label2.image = f_test
+                label2.grid(row=7, column=0, columnspan=3)
+                stringreport = "\n".join(report)
+                string = StringVar()
+                string.set(stringreport)
+                Label(root, textvariable=string, font='Aerial 12', justify="left").grid(row=8, column=1)
+                Button(root, text="Result", command=resultImg).grid(row=5, column=1)
 
-        def Preview():
-            show_image("Preview (Press any key to close)", read_image(filepath))
-            end_program()
+            def Preview():
+                global Debug
+                temp_Debug = Debug
+                Debug = True
+                show_image("Preview (Press any key to close)", read_image(filepath))
+                end_program()
+                Debug = temp_Debug
 
-        if filepath:
-            Button(root, text="Preview", command=Preview).grid(row=2, column=0)
-            Button(root, text="Analyse", command=Analyze).grid(row=3, column=0)
+            if filepath:
+                Button(root, text="Preview", command=Preview).grid(row=3, column=1)
+                Button(root, text="Analyse", command=Analyze).grid(row=4, column=1)
 
-    Button(root, text="Browse", command=open_file).grid(row=1, column=0)
+        Button(root, text="Browse", command=open_file).grid(row=1, column=1)
 
-    root.mainloop()
+        root.mainloop()
+    except:
+        pass
+    finally:
+        root.destroy()
 
 
 if __name__ == "__main__":

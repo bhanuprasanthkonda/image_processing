@@ -323,11 +323,18 @@ def GUI():
     root = Tk()
     try:
         root.title("Image_Processing")
-        root.geometry("800x700")
+        root.geometry("775x700")
         text = StringVar()
         text.set("Please select the file using the browse option")
+        Label(root, text="                                     ", justify="center").grid(row=0, column=0)
+        Label(root, text="                                     ", justify="center").grid(row=0, column=1)
+        Label(root, text="                                     ", justify="center").grid(row=0, column=2)
+        Label(root, text="                                     ", justify="center").grid(row=1, column=0)
+
         L1 = Label(root, textvariable=text, justify="center")
-        L1.grid(row=0, column=1)
+        L1.grid(row=1, column=1)
+        # root.grid_rowconfigure(1, weight=1)
+        root.grid_columnconfigure(1, weight=1) # making the input to the center
         label1 = None
 
         def open_file():
@@ -344,6 +351,7 @@ def GUI():
                 image1 = image1.resize(
                     (int(image1.width * scale_percent * 0.35), int(0.35 * image1.height * scale_percent)),
                     Image.ANTIALIAS)
+                print(image1.width, image1.height)
                 test = ImageTk.PhotoImage(image1)
                 try:
                     label1.configure(image=test)
@@ -351,11 +359,15 @@ def GUI():
                 except:
                     label1 = Label(image=test, justify="center")
                     label1.image = test
-                label1.grid(row=2, column=0, columnspan=3)
+                label1.grid(row=3, column=0, columnspan=3)
 
             def resultImg():
+                global Debug
+                temp_Debug = Debug
+                Debug = True
                 show_image("Result (Press any key to close)", final_img)
                 end_program()
+                Debug = temp_Debug
 
             # def GUI_ProgressBar(text):
             #     return
@@ -376,12 +388,12 @@ def GUI():
                 except:
                     label2 = Label(image=f_test, justify="center")
                     label2.image = f_test
-                label2.grid(row=7, column=0, columnspan=3)
+                label2.grid(row=8, column=0, columnspan=3)
                 stringreport = "\n".join(report)
                 string = StringVar()
                 string.set(stringreport)
-                Label(root, textvariable=string, font='Aerial 12', justify="left").grid(row=8, column=1)
-                Button(root, text="Result", command=resultImg).grid(row=5, column=1)
+                Label(root, textvariable=string, font='Aerial 12', justify="left").grid(row=9, column=1)
+                Button(root, text="Result", command=resultImg).grid(row=6, column=1)
 
             def Preview():
                 global Debug
@@ -392,10 +404,10 @@ def GUI():
                 Debug = temp_Debug
 
             if filepath:
-                Button(root, text="Preview", command=Preview).grid(row=3, column=1)
-                Button(root, text="Analyse", command=Analyze).grid(row=4, column=1)
+                Button(root, text="Preview", command=Preview).grid(row=4, column=1)
+                Button(root, text="Analyse", command=Analyze).grid(row=5, column=1)
 
-        Button(root, text="Browse", command=open_file).grid(row=1, column=1)
+        Button(root, text="Browse", command=open_file).grid(row=2, column=1)
 
         root.mainloop()
     except:

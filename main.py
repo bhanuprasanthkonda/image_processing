@@ -3,8 +3,10 @@ import numpy as np
 import sys
 import os
 from tkinter import *
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 from PIL import ImageTk, Image
+from datetime import datetime
+
 import warnings
 
 warnings.filterwarnings('ignore', '.*', )
@@ -36,9 +38,9 @@ def creating_empty_image(dim, dtype):
 
 
 # setting the contras and brightness of the image
-def image_contrast_brightness(image, alpha=2.95, beta=-10):
+def image_contrast_brightness(image, alpha=3.0, beta=-10):
     new_image = creating_empty_image(image.shape, image.dtype)
-    # alpha = 2.95
+    # alpha = 3.0
     # beta = -10
     for y in range(image.shape[0]):
         for x in range(image.shape[1]):
@@ -164,6 +166,7 @@ def overlap(img, toplayer):
 
 # returns each stones embedment in a list
 def embedment(image, location_of_stones):
+    # print(location_of_stones)
     list_of_embedment = []
     lst = []
     initial_len = len(list_of_embedment)
@@ -194,6 +197,30 @@ def write_on_image(image, pos, text):
     return cv2.putText(image, str(text), pos, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
+def draw_on_image(image, min_max):
+    # font
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    # fontScale
+    fontScale = 0.45
+    # Blue color in BGR
+    color = (255, 0, 255)
+    # Line thickness of 2 px
+    thickness = 2
+    # Using cv2.putText() method
+
+    for x_min, x_max, y_min, y_max in min_max:
+        start_point = (y_min, x_min)
+
+        # Ending coordinate, here (220, 220)
+        # represents the bottom right corner of rectangle
+        end_point = (y_max, x_max)
+
+        # Using cv2.rectangle() method
+        # Draw a rectangle with blue line borders of thickness of 2 px
+        image = cv2.rectangle(image, start_point, end_point, color, thickness)
+    return image
+
+
 # to write the image
 def write_image(filename, image):
     if filename[-4:] != ".png":
@@ -212,91 +239,81 @@ def end_program():
         cv2.destroyAllWindows()
 
 
-def main(threshold=20.0, alpha=2.95, beta=-10.0, img="", shouldBreak=False):
-    # print(img)
-    if img is None:
-        img = "img1.png"
-    img = read_image(img)
-    # print(img[0][0])
-    img = image_scaling(img)
-    img_copy = img.copy()
-    # bm, gm, rm = float("inf"), float("inf"), float("inf")
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            b, g, r = img[i][j]
-            if r >= 66 and g >= 135 and b >= 155:
-                img[i][j] = [133, 57, 10]
-            elif r <= 35 and g <= 35 and b <= 35:
-                img[i][j] = [0, 0, 0]
-    #         elif i == 0:
-    #             bm = min(bm, b)
-    #             gm = min(gm, g)
-    #             rm = min(rm, r)
-    # print(bm, gm, rm)
-    show_image("image", img)
-    # print(img.shape)
-    # end_program()
-    # return
+def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part="",
+         img_copy="", stones_coordinates=None, boarders=None, min_maxes=None, top_layer=None):
+    if isinstance(img, str):
+        img = read_image(img)
+        img = image_scaling(img)
+        img_copy = img.copy()
+        for i in range(img.shape[0]):
+            for j in range(img.shape[1]):
+                b, g, r = img[i][j]
+                if r >= 66 and g >= 135 and b >= 155:
+                    img[i][j] = [133, 57, 10]
+                elif r <= 35 and g <= 35 and b <= 35:
+                    img[i][j] = [0, 0, 0]
+        show_image("image", img)
 
-    # to process the black line around the stones
-    grey_scale_img = image_conversion(img, cv2.COLOR_BGR2GRAY)
-    show_image("grey_scale_img", grey_scale_img)
-    # progress("*" * 2 + " 10% Complete")
-    # end_program()
-    # return
-    dim = grey_scale_img.shape
-    for i in range(dim[0]):
-        for j in range(dim[1]):
-            grey_scale_img[i][j] = 123 if grey_scale_img[i][j] < 23 else 0
-    stone_holding_part = image_sharpness(grey_scale_img)
-    stone_holding_part = remove_tiny_parts(stone_holding_part)
-    show_image("stone_holding_part", stone_holding_part)
-    # end_program()
-    # return
-    # progress("**" * 2 + " 20% Complete")
+        # to process the black line around the stones
+        grey_scale_img = image_conversion(img, cv2.COLOR_BGR2GRAY)
+        show_image("grey_scale_img", grey_scale_img)
 
-    # enhancing the image to capture stones
-    img = image_conversion(img, cv2.COLOR_BGR2RGB)
-    img = image_contrast_brightness(img, alpha, beta)
-    img = image_sharpness(img)
-    img = image_conversion(img, cv2.COLOR_BGR2GRAY)
-    show_image("black", img)
-    # end_program()
-    # return
-    # progress("***" * 2 + " 30% Complete")
+        dim = grey_scale_img.shape
+        stone_holding_part_threshold = threshold[1]
+        for i in range(dim[0]):
+            for j in range(dim[1]):
+                grey_scale_img[i][j] = 123 if grey_scale_img[i][j] < stone_holding_part_threshold else 0
+        stone_holding_part = image_sharpness(grey_scale_img)
+        stone_holding_part = remove_tiny_parts(stone_holding_part)
+        show_image("stone_holding_part", stone_holding_part)
 
-    # converting the image into black and white based on a threshold
-    dim = img.shape
-    image_bw = creating_empty_image(dim, img.dtype)
+        # enhancing the image to capture stones
+        img = image_conversion(img, cv2.COLOR_BGR2RGB)
+        img = image_contrast_brightness(img, alpha, int(beta))
+        img = image_sharpness(img)
+        img = image_conversion(img, cv2.COLOR_BGR2GRAY)
+        show_image("black", img)
 
-    # setting threshold for the black and white image
-    # threshold = 23
-    # print("threshold",threshold)
-    for i in range(dim[0]):
-        for j in range(dim[1]):
-            image_bw[i][j] = 255 if img[i][j] > threshold else 0
-    show_image("image_bw", image_bw)
-    end_program()
-    if shouldBreak:
+        # converting the image into black and white based on a threshold
+        dim = img.shape
+        image_bw = creating_empty_image(dim, img.dtype)
+
+        # setting threshold for the black and white image
+        # threshold = 23
+        for i in range(dim[0]):
+            for j in range(dim[1]):
+                image_bw[i][j] = 255 if img[i][j] > threshold[0] else 0
+        show_image("image_bw", image_bw)
+
+        # if shouldBreak:
         write_image("image_bw", image_bw)
+
         # print("complete")
-        return image_bw
 
-    # progress("****" * 2 + " 40% Complete")
+        # image_bw = img
 
-    # separating the top layer of stones
-    all_solid_stones = top_layer_stones(image_bw)
-    show_image("all_solid_stones", all_solid_stones)
-    # end_program()
-    # return
-    # progress("*****" * 2 + " 50% Complete")
-    stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part, True)
-    # progress("*******" * 2 + " 70% Complete")
+        # separating the top layer of stones
+        all_solid_stones = top_layer_stones(image_bw)
+        show_image("all_solid_stones", all_solid_stones)
+
+        stones_coordinates, boarders, min_maxes, top_layer = top_layer_stones(all_solid_stones, stone_holding_part,
+                                                                              True)
+        preview_img = creating_empty_image(dim, img.dtype)
+        for i in range(dim[0]):
+            for j in range(dim[1]):
+                preview_img[i][j] = 255 if top_layer[i][j] == 255 else (123 if grey_scale_img[i][j] == 123 else 0)
+        preview_img = draw_on_image(preview_img, min_maxes)
+        show_image("preview_img", preview_img)
+        show_image("top_layer_2", top_layer)
+        write_image("prev_image_bw", preview_img)
+        end_program()
+        return image_bw, stone_holding_part, img_copy, stones_coordinates, boarders, min_maxes, top_layer
+
+    # stones_coordinates, boarders, min_maxes, top_layer
     stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
+    # print(stones_embedment_percentage)
     overlap_img = overlap(img_copy, top_layer).copy()
-    # progress("********" * 2 + " 80% Complete")
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
-    # progress("*********" * 2 + " 90% Complete")
     report = []
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
@@ -308,10 +325,8 @@ def main(threshold=20.0, alpha=2.95, beta=-10.0, img="", shouldBreak=False):
         j *= 100
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         overlap_img = write_on_image(overlap_img, (y - 20, x), str(j)[:5] + "%")
-        # print(i + 1, ":", j, "%")
         report.append(str(i + 1) + " : " + str(j)[:5] + "%")
     show_image("result", top_layer)
-    # progress("**********" * 2 + " 100% Complete")
 
     # writing the processed image to the file
     write_image("result", top_layer)
@@ -320,51 +335,24 @@ def main(threshold=20.0, alpha=2.95, beta=-10.0, img="", shouldBreak=False):
     return overlap_img, report
 
 
-# def dummy_photo():
-#     from random import randint
-#     img = read_image("img1.png")
-#     img = creating_empty_image(img.shape, img.dtype)
-#     print(img.shape)
-#     dimx, dimy, dimz = list(img.shape)
-#     for i in range(len(img) // 2):
-#         for j in range(len(img[0])):
-#             img[i][j] = [0, 0, 200]
-#     img = image_conversion(img, cv2.COLOR_BGR2RGB)
-#     lst = []
-#     count = 0
-#     for i in range(11):
-#         while count == len(lst):
-#             x, y = img.shape[0] // 2 - randint(5, 20), randint(0, img.shape[1])
-#             l, w = randint(10, 40), randint(10, 40)
-#             lst.append((x, y))
-#             for m in range(l):
-#                 for n in range(w):
-#                     if 0 <= x + m < dimx and 0 <= y + n < dimy:
-#                         img[x + m][y + n] = [179, 136, 0]
-#         count += 1
-#     for i in range(10):
-#         while count == len(lst):
-#             x, y = randint(img.shape[0] // 2 + 10, img.shape[0]), randint(0, img.shape[1])
-#             l, w = randint(10, 60), randint(10, 60)
-#             lst.append((x, y))
-#             for m in range(l):
-#                 for n in range(w):
-#                     if 0 <= x + m < dimx and 0 <= y + n < dimy:
-#                         img[x + m][y + n] = [179, 136, 0]
-#         count += 1
-#     show_image("kn", img)
-#     print(img.shape)
-#     # end_program()
-#     return img
-
-
 def GUI():
     root = Tk()
     res = None
     label2 = None
+    # main_frame = Frame(root)
+    # main_frame.pack(fill=BOTH, expand=1)
+    # my_canvas = Canvas(main_frame)
+    # my_canvas.pack(side=LEFT, fill=BOTH, expand=1)
+    # my_scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=my_canvas.yview)
+    # my_scrollbar.pack(side=RIGHT, fill=Y)
+    # my_canvas.configure(yscrollcommand=my_scrollbar.set)
+    # my_canvas.bind('<Configure>', lambda e:my_canvas.configure(scrollregion=my_canvas.bbox("all")))
+    #
+    # second_frame = Frame(my_canvas)
+    # my_canvas.create_window((0,0), window=second_frame, anchor="nw")
     try:
         root.title("Image_Processing")
-        root.geometry("775x700")
+        root.geometry("775x775")
         text = StringVar()
         text.set("Please select the file using the browse option")
         Label(root, text="                                     ", justify="center").grid(row=0, column=0)
@@ -377,8 +365,13 @@ def GUI():
         # root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(1, weight=1)  # making the input to the center
         label1 = None
-        threshold = 23
-        inptext = None
+        loaded_img = ""
+        stone_holding_part = ""
+        img_copy = ""
+        stones_coordinates = []
+        boarders = []
+        min_maxes = []
+        top_layer = None
 
         def open_file():
             global label1
@@ -394,7 +387,6 @@ def GUI():
                 image1 = image1.resize(
                     (int(image1.width * scale_percent * 0.35), int(0.35 * image1.height * scale_percent)),
                     Image.ANTIALIAS)
-                # print(image1.width, image1.height)
                 test = ImageTk.PhotoImage(image1)
                 try:
                     label1.configure(image=test)
@@ -412,18 +404,23 @@ def GUI():
                 end_program()
                 Debug = temp_Debug
 
-            # def GUI_ProgressBar(text):
-            #     return
-            #     Label(root, text=text, font='Aerial 12', justify="left").grid(row=6, column=0)
             def Analyze():
                 global res
                 global label2
                 global final_img
-                threshold = float(inptext_threshold.get().strip())
+                global loaded_img
+                global stone_holding_part
+                global img_copy, stones_coordinates, boarders, min_maxes, top_layer
+                threshold = list(map(float, inptext_threshold.get().strip().split(",")))
                 # print(threshold)
                 alpha = float(inptext_intensity.get().strip())
                 beta = float(inptext_reduction.get().strip())
-                final_img, report = main(threshold, alpha, beta, filepath, False)
+                # print(type(loaded_img))
+                if isinstance(loaded_img, str):
+                    loaded_img, stone_holding_part, img_copy, stones_coordinates, boarders, min_maxes, top_layer = main(
+                        filepath, threshold, alpha, beta)
+                final_img, report = main(loaded_img, threshold, alpha, beta, stone_holding_part, img_copy,
+                                         stones_coordinates, boarders, min_maxes, top_layer)
                 f_img = Image.open("overlap.png")
                 scale_percent = 2000 / f_img.width
                 image2 = f_img.resize(
@@ -439,15 +436,24 @@ def GUI():
                     label2 = Label(image=f_test, justify="center")
                     label2.image = f_test
                 label2.grid(row=12, column=0, columnspan=5)
+                report.insert(0, "Result(Copied to Clipboard) \n(Generated at " + datetime.now().strftime(
+                    "%d/%m/%Y %H:%M:%S") + ")")
                 stringreport = "\n".join(report)
-                string = StringVar()
-                string.set(stringreport)
+                # string = StringVar()
+                # string.set(stringreport)
                 try:
                     res.destroy()
                 except:
                     pass
-                res = Label(root, textvariable=string, font='Aerial 12', justify="left")
+
+                # res = Label(root, textvariable=string, font='Aerial 12', justify="left")
+                res = Text(root, height=15)
+                res.insert(END, stringreport, "result")
+                res.configure(state=DISABLED)
+                res.tag_config("result", justify='center')
                 res.grid(row=13, column=1)
+                root.clipboard_clear()
+                root.clipboard_append(stringreport)
                 root.grid_columnconfigure(13, weight=1)
                 Button(root, text="Result", command=resultImg).grid(row=11, column=1)
 
@@ -455,12 +461,18 @@ def GUI():
                 global res
                 global label2
                 global final_img
-                threshold = float(inptext_threshold.get().strip())
+                global loaded_img
+                global stone_holding_part
+                global img_copy
+                global stones_coordinates, boarders, min_maxes, top_layer
+                lastloaded_text.set("Loading")
+                threshold = list(map(float, inptext_threshold.get().strip().split(",")))
                 # print(threshold)
                 alpha = float(inptext_intensity.get().strip())
                 beta = float(inptext_reduction.get().strip())
-                f_img = main(threshold, alpha, beta, filepath, True)
-                f_img = Image.open("image_bw.png")
+                loaded_img, stone_holding_part, img_copy, stones_coordinates, boarders, min_maxes, top_layer = main(
+                    filepath, threshold, alpha, beta)
+                f_img = Image.open("prev_image_bw.png")
                 scale_percent = 2000 / f_img.width
                 image2 = f_img.resize(
                     (int(f_img.width * scale_percent * 0.35), int(0.35 * f_img.height * scale_percent)),
@@ -475,17 +487,8 @@ def GUI():
                     label2 = Label(image=f_test, justify="center")
                     label2.image = f_test
                 label2.grid(row=9, column=0, columnspan=5)
-                # stringreport = "\n".join(report)
-                # string = StringVar()
-                # string.set(stringreport)
-                # try:
-                #     res.destroy()
-                # except:
-                #     pass
-                # res = Label(root, textvariable=string, font='Aerial 12', justify="left")
-                # res.grid(row=9, column=1)
-                # root.grid_columnconfigure(11, weight=1)
-                # Button(root, text="Result", command=resultImg).grid(row=6, column=1)
+                lastloaded_text.set(str(datetime.now().strftime("Last processed: %d/%m/%Y %H:%M:%S")))
+                Button(root, text="Start Analyse", command=Analyze).grid(row=10, column=1)
 
             def Preview():
                 global Debug
@@ -497,31 +500,29 @@ def GUI():
 
             if filepath:
                 Button(root, text="Preview", command=Preview).grid(row=4, column=1)
-                Button(root, text="Start Analyse", command=Analyze).grid(row=10, column=1)
                 Button(root, text="Load Image", command=setThreshold).grid(row=8, column=1)
 
-                Label(root, text="Threshold:").grid(row=5, column=1)
-                # inptext_threshold = StringVar()
+                Label(root, text="Threshold(stone,adhesive):").grid(row=5, column=1)
                 inptext_threshold = Entry(root)
                 inptext_threshold.grid(row=5, column=2)
                 inptext_threshold.focus()
-                inptext_threshold.insert(0, "20")
+                inptext_threshold.insert(0, "20,30")
 
                 Label(root, text="Intensity:").grid(row=6, column=1)
-                # inptext_text = StringVar()
                 inptext_intensity = Entry(root)
                 inptext_intensity.grid(row=6, column=2)
                 inptext_intensity.focus()
-                inptext_intensity.insert(0, "2.95")
+                inptext_intensity.insert(0, "3.0")
 
                 Label(root, text="Reduction:").grid(row=7, column=1)
-                # inptext_ = StringVar()
                 inptext_reduction = Entry(root)
                 inptext_reduction.grid(row=7, column=2)
                 inptext_reduction.focus()
                 inptext_reduction.insert(0, "-10")
 
         Button(root, text="Browse", command=open_file).grid(row=2, column=1)
+        lastloaded_text = StringVar()
+        Label(root, textvariable=lastloaded_text).grid(row=8, column=2)
 
         root.mainloop()
     except:
@@ -532,8 +533,5 @@ def GUI():
 
 
 if __name__ == "__main__":
-    # img = dummy_photo()
-    # write_image("img2.png", img)
-    # show_image("dummy", img)
     GUI()
-    # main("IMG_6228.png")
+

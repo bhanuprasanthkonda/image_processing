@@ -379,7 +379,7 @@ def GUI():
             filepath = ""
             if file:
                 filepath = os.path.abspath(file.name)
-                if os.stat(filepath).st_size / 1024 > 1024 or filepath[-4:] != ".png":
+                if os.stat(filepath).st_size / 1024**2 > 1.3 or filepath[-4:] != ".png":
                     text.set(
                         "                  Please select the file using the browse option (file size should be less than 1MB and in png format)                     ")
                     filepath = ""

@@ -359,7 +359,7 @@ def GUI():
             "                                                          Please select the file using the browse option                                                 ")
 
         L1 = Label(root, textvariable=text, justify="center")
-        L1.grid(row=1, column=column, columnspan=3)
+        L1.grid(row=1, column=column, columnspan=4)
 
         root.grid_columnconfigure(column, weight=1)  # making the input to the center
         label1 = None
@@ -372,8 +372,9 @@ def GUI():
         top_layer = None
 
         def open_file():
-            global label1, preview_button, inptext_threshold_text, inptext_threshold, inptext_intensity_text, res,\
-        inptext_intensity, inptext_reduction_text, inptext_reduction, load_button, label2, analyse_button, result_button
+            global label1, preview_button, inptext_stone_threshold_text, inptext_stone_threshold, inptext_intensity_text, res, \
+                inptext_intensity, inptext_reduction_text, inptext_reduction, load_button, label2, analyse_button, result_button, \
+                inptext_adhesive_threshold, inptext_adhesive_threshold_text
             file = filedialog.askopenfile(mode='r')
             filepath = ""
             if file:
@@ -391,11 +392,13 @@ def GUI():
                     except:
                         pass
                     try:
-                        inptext_threshold_text.grid_remove()
+                        inptext_stone_threshold_text.grid_remove()
+                        inptext_adhesive_threshold_text.grid_remove()
                     except:
                         pass
                     try:
-                        inptext_threshold.grid_remove()
+                        inptext_stone_threshold.grid_remove()
+                        inptext_adhesive_threshold.grid_remove()
                     except:
                         pass
                     try:
@@ -448,7 +451,7 @@ def GUI():
                 except:
                     label1 = Label(root, image=test, justify="center")
                     label1.image = test
-                label1.grid(row=3, column=column, columnspan=3)
+                label1.grid(row=3, column=column, columnspan=4)
 
             def resultImg():
                 global Debug
@@ -465,7 +468,7 @@ def GUI():
                 global loaded_img
                 global stone_holding_part
                 global img_copy, stones_coordinates, boarders, min_maxes, top_layer, result_button, res
-                threshold = list(map(float, inptext_threshold.get().strip().split(",")))
+                threshold = [float(inptext_stone_threshold.get()), float(inptext_adhesive_threshold.get())]
                 alpha = float(inptext_intensity.get().strip())
                 beta = float(inptext_reduction.get().strip())
                 if isinstance(loaded_img, str):
@@ -487,7 +490,7 @@ def GUI():
                 except:
                     label2 = Label(root, image=f_test, justify="center")
                     label2.image = f_test
-                label2.grid(row=12, column=column, columnspan=3)
+                label2.grid(row=12, column=column, columnspan=4)
                 # label2.pack()
                 report.insert(0, "Result(Copied to Clipboard) \n(Generated at " + datetime.now().strftime(
                     "%d/%m/%Y %H:%M:%S") + ")")
@@ -497,16 +500,16 @@ def GUI():
                 except:
                     pass
 
-                res = Text(root, height=12)
+                res = Text(root, height=len(report)+1)
                 res.insert(END, stringreport, "result")
                 res.configure(state=DISABLED)
                 res.tag_config("result", justify='center')
-                res.grid(row=13, column=column, columnspan=3)
+                res.grid(row=13, column=column, columnspan=4)
                 root.clipboard_clear()
                 root.clipboard_append(stringreport)
                 root.grid_columnconfigure(0, weight=1)
-                result_button = Button(root, text="Result", command=resultImg)
-                result_button.grid(row=11, column=column, columnspan=3)
+                result_button = Button(root, text="Result", command=resultImg, anchor="center")
+                result_button.grid(row=11, column=column, columnspan=4)
 
             def setThreshold():
                 global res
@@ -517,7 +520,7 @@ def GUI():
                 global img_copy
                 global stones_coordinates, boarders, min_maxes, top_layer, analyse_button
                 lastloaded_text.set("Loading")
-                threshold = list(map(float, inptext_threshold.get().strip().split(",")))
+                threshold = [float(inptext_stone_threshold.get()), float(inptext_adhesive_threshold.get())]
                 alpha = float(inptext_intensity.get().strip())
                 beta = float(inptext_reduction.get().strip())
                 loaded_img, stone_holding_part, img_copy, stones_coordinates, boarders, min_maxes, top_layer = main(
@@ -536,10 +539,10 @@ def GUI():
                 except:
                     label2 = Label(root, image=f_test, justify="center")
                     label2.image = f_test
-                label2.grid(row=9, column=column, columnspan=3)
+                label2.grid(row=9, column=column, columnspan=4)
                 lastloaded_text.set(str(datetime.now().strftime("Last processed: %d/%m/%Y %H:%M:%S")))
                 analyse_button = Button(root, text="Start Analyse", command=Analyze)
-                analyse_button.grid(row=10, column=column, columnspan=3)
+                analyse_button.grid(row=10, column=column, columnspan=4)
 
             def Preview():
                 global Debug
@@ -551,36 +554,46 @@ def GUI():
 
             if filepath:
                 preview_button = Button(root, text="Preview", command=Preview)
-                preview_button.grid(row=4, column=column, columnspan=3)
+                preview_button.grid(row=4, column=column, columnspan=4)
 
-                inptext_threshold_text = Label(root, text="Threshold(stone,adhesive):")
-                inptext_threshold_text.grid(row=5, column=column, columnspan=2)
-                inptext_threshold = Entry(root)
-                inptext_threshold.grid(row=5, column=column + 1)
-                inptext_threshold.focus()
-                inptext_threshold.insert(0, "20,30")
+                inptext_stone_threshold_text = Label(root, text="Stone Threshold:", justify=RIGHT)
+                inptext_stone_threshold_text.grid(row=5, column=column)
+                inptext_stone_threshold = Entry(root)
+                inptext_stone_threshold.grid(row=5, column=column + 1)
+                inptext_stone_threshold.focus()
+                inptext_stone_threshold.insert(0, "20")
 
-                inptext_intensity_text = Label(root, text="Intensity:")
-                inptext_intensity_text.grid(row=6, column=column, columnspan=2)
+                inptext_adhesive_threshold_text = Label(root, text="Adhesive Threshold:", justify=RIGHT)
+                inptext_adhesive_threshold_text.grid(row=5, column=column + 2)
+                inptext_adhesive_threshold = Entry(root)
+                inptext_adhesive_threshold.grid(row=5, column=column + 3)
+                inptext_adhesive_threshold.focus()
+                inptext_adhesive_threshold.insert(0, "30")
+
+                inptext_intensity_text = Label(root, text="Intensity:", justify=RIGHT)
+                inptext_intensity_text.grid(row=6, column=column)
                 inptext_intensity = Entry(root)
                 inptext_intensity.grid(row=6, column=column + 1)
                 inptext_intensity.focus()
                 inptext_intensity.insert(0, "3.0")
 
-                inptext_reduction_text = Label(root, text="Reduction:")
-                inptext_reduction_text.grid(row=7, column=column, columnspan=2)
+                inptext_reduction_text = Label(root, text="Reduction:", justify=RIGHT)
+                inptext_reduction_text.grid(row=6, column=column + 2)
                 inptext_reduction = Entry(root)
-                inptext_reduction.grid(row=7, column=column + 1)
+                inptext_reduction.grid(row=6, column=column + 3)
                 inptext_reduction.focus()
                 inptext_reduction.insert(0, "-10")
 
-                load_button = Button(root, text="Load Image", command=setThreshold)
-                load_button.grid(row=8, column=column, columnspan=3)
+                formula_label = Label(root, text="New IMAGE = (IMAGE x Intensity) + Reduction", anchor="center")
+                formula_label.grid(row=7, column=column, columnspan=4)
 
-        Button(root, text="Browse", command=open_file).grid(row=2, column=column, columnspan=3)
+                load_button = Button(root, text="Load Image", command=setThreshold)
+                load_button.grid(row=8, column=column, columnspan=4)
+
+        Button(root, text="Browse", command=open_file).grid(row=2, column=column, columnspan=4)
         lastloaded_text = StringVar()
         lastloaded_text_label = Label(root, textvariable=lastloaded_text)
-        lastloaded_text_label.grid(row=8, column=column + 1, columnspan=3)
+        lastloaded_text_label.grid(row=8, column=column + 2, columnspan=2)
 
         main_root.mainloop()
     except:

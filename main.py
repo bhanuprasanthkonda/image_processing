@@ -336,34 +336,42 @@ def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part=
 
 
 def GUI():
-    root = Tk()
+    column = 0
+    width, height = 725, 775
+    main_root = Tk()
     res = None
     label2 = None
-    # main_frame = Frame(root)
-    # main_frame.pack(fill=BOTH, expand=1)
-    # my_canvas = Canvas(main_frame)
-    # my_canvas.pack(side=LEFT, fill=BOTH, expand=1)
-    # my_scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=my_canvas.yview)
-    # my_scrollbar.pack(side=RIGHT, fill=Y)
-    # my_canvas.configure(yscrollcommand=my_scrollbar.set)
-    # my_canvas.bind('<Configure>', lambda e:my_canvas.configure(scrollregion=my_canvas.bbox("all")))
-    #
-    # second_frame = Frame(my_canvas)
-    # my_canvas.create_window((0,0), window=second_frame, anchor="nw")
+    main_frame = Frame(main_root)
+    main_frame.pack(fill=BOTH, expand=1)
+
+    my_canvas = Canvas(main_frame, scrollregion=(0, 0, 1075, 775))
+    my_canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+    my_scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=my_canvas.yview)
+    my_scrollbar.pack(side=RIGHT, fill=Y)
+
+    my_canvas.configure(yscrollcommand=my_scrollbar.set)
+    # my_canvas.bind('<configure>', lambda e: my_canvas.configure(scrollregion=my_canvas.bbox("all")))
+    my_canvas.configure(scrollregion=my_canvas.bbox("all"))
+
+    root = Frame(my_canvas)
+    my_canvas.create_window((0, 0), window=root, anchor="nw")
+    main_root.bind_all('<MouseWheel>', lambda event: my_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
     try:
-        root.title("Image_Processing")
-        root.geometry("775x775")
+        main_root.title("Image_Processing")
+        main_root.geometry(str(width) + "x" + str(height))
         text = StringVar()
-        text.set("Please select the file using the browse option")
-        Label(root, text="                                     ", justify="center").grid(row=0, column=0)
-        Label(root, text="                                     ", justify="center").grid(row=0, column=1)
-        Label(root, text="                                     ", justify="center").grid(row=0, column=2)
-        Label(root, text="                                     ", justify="center").grid(row=1, column=0)
+        text.set(
+            "                                                          Please select the file using the browse option                                                 ")
+        # Label(root, text="                                               ", justify="center").grid(row=0, column=0)
+        # Label(root, text="                                     ", justify="center").grid(row=0, column=1)
+        # Label(root, text="                                     ", justify="center").grid(row=0, column=2)
 
         L1 = Label(root, textvariable=text, justify="center")
-        L1.grid(row=1, columnspan=5)
+        L1.grid(row=1, column=column, columnspan=3)
+        # L1.pack()
         # root.grid_rowconfigure(1, weight=1)
-        root.grid_columnconfigure(1, weight=1)  # making the input to the center
+        root.grid_columnconfigure(column, weight=1)  # making the input to the center
         label1 = None
         loaded_img = ""
         stone_holding_part = ""
@@ -389,12 +397,14 @@ def GUI():
                     Image.ANTIALIAS)
                 test = ImageTk.PhotoImage(image1)
                 try:
-                    label1.configure(image=test)
+                    label1.destroy()
+                    label1.configure(root, image=test)
                     label1.image = test
                 except:
-                    label1 = Label(image=test, justify="center")
+                    label1 = Label(root, image=test, justify="center")
                     label1.image = test
-                label1.grid(row=3, column=0, columnspan=5)
+                label1.grid(row=3, column=column, columnspan=3)
+                # label1.pack()
 
             def resultImg():
                 global Debug
@@ -429,13 +439,14 @@ def GUI():
                 f_test = ImageTk.PhotoImage(image2)
                 try:
                     label2.destroy()
-                    label2 = Label(image=f_test, justify="center")
+                    label2 = Label(root, image=f_test, justify="center")
                     label2.configure(image=f_test)
                     label2.image = f_test
                 except:
-                    label2 = Label(image=f_test, justify="center")
+                    label2 = Label(root, image=f_test, justify="center")
                     label2.image = f_test
-                label2.grid(row=12, column=0, columnspan=5)
+                label2.grid(row=12, column=column, columnspan=3)
+                # label2.pack()
                 report.insert(0, "Result(Copied to Clipboard) \n(Generated at " + datetime.now().strftime(
                     "%d/%m/%Y %H:%M:%S") + ")")
                 stringreport = "\n".join(report)
@@ -447,15 +458,17 @@ def GUI():
                     pass
 
                 # res = Label(root, textvariable=string, font='Aerial 12', justify="left")
-                res = Text(root, height=15)
+                res = Text(root, height=12)
                 res.insert(END, stringreport, "result")
                 res.configure(state=DISABLED)
                 res.tag_config("result", justify='center')
-                res.grid(row=13, column=1)
+                res.grid(row=13, column=column, columnspan=3)
+                # res.pack()
                 root.clipboard_clear()
                 root.clipboard_append(stringreport)
-                root.grid_columnconfigure(13, weight=1)
-                Button(root, text="Result", command=resultImg).grid(row=11, column=1)
+                root.grid_columnconfigure(0, weight=1)
+                Button(root, text="Result", command=resultImg).grid(row=11, column=column, columnspan=3)
+                # Button(root, text="Result", command=resultImg).pack()
 
             def setThreshold():
                 global res
@@ -480,15 +493,17 @@ def GUI():
                 f_test = ImageTk.PhotoImage(image2)
                 try:
                     label2.destroy()
-                    label2 = Label(image=f_test, justify="center")
+                    label2 = Label(root, image=f_test, justify="center")
                     label2.configure(image=f_test)
                     label2.image = f_test
                 except:
-                    label2 = Label(image=f_test, justify="center")
+                    label2 = Label(root, image=f_test, justify="center")
                     label2.image = f_test
-                label2.grid(row=9, column=0, columnspan=5)
+                label2.grid(row=9, column=column, columnspan=3)
+                # label2.pack()
                 lastloaded_text.set(str(datetime.now().strftime("Last processed: %d/%m/%Y %H:%M:%S")))
-                Button(root, text="Start Analyse", command=Analyze).grid(row=10, column=1)
+                Button(root, text="Start Analyse", command=Analyze).grid(row=10, column=column, columnspan=3)
+                # Button(root, text="Start Analyse", command=Analyze).pack()
 
             def Preview():
                 global Debug
@@ -499,32 +514,43 @@ def GUI():
                 Debug = temp_Debug
 
             if filepath:
-                Button(root, text="Preview", command=Preview).grid(row=4, column=1)
-                Button(root, text="Load Image", command=setThreshold).grid(row=8, column=1)
+                Button(root, text="Preview", command=Preview).grid(row=4, column=column, columnspan=3)
+                # Button(root, text="Preview", command=Preview).pack()
 
-                Label(root, text="Threshold(stone,adhesive):").grid(row=5, column=1)
+                Label(root, text="Threshold(stone,adhesive):").grid(row=5, column=column, columnspan=2)
+                # Label(root, text="Threshold(stone,adhesive):").pack()
                 inptext_threshold = Entry(root)
-                inptext_threshold.grid(row=5, column=2)
+                inptext_threshold.grid(row=5, column=column + 1)
+                # inptext_threshold.pack()
                 inptext_threshold.focus()
                 inptext_threshold.insert(0, "20,30")
 
-                Label(root, text="Intensity:").grid(row=6, column=1)
+                Label(root, text="Intensity:").grid(row=6, column=column, columnspan=2)
+                # Label(root, text="Intensity:").pack()
                 inptext_intensity = Entry(root)
-                inptext_intensity.grid(row=6, column=2)
+                inptext_intensity.grid(row=6, column=column + 1)
+                # inptext_intensity.pack()
                 inptext_intensity.focus()
                 inptext_intensity.insert(0, "3.0")
 
-                Label(root, text="Reduction:").grid(row=7, column=1)
+                Label(root, text="Reduction:").grid(row=7, column=column, columnspan=2)
+                # Label(root, text="Reduction:").pack()
                 inptext_reduction = Entry(root)
-                inptext_reduction.grid(row=7, column=2)
+                inptext_reduction.grid(row=7, column=column + 1)
+                # inptext_reduction.pack()
                 inptext_reduction.focus()
                 inptext_reduction.insert(0, "-10")
 
-        Button(root, text="Browse", command=open_file).grid(row=2, column=1)
-        lastloaded_text = StringVar()
-        Label(root, textvariable=lastloaded_text).grid(row=8, column=2)
+                Button(root, text="Load Image", command=setThreshold).grid(row=8, column=column, columnspan=3)
+                # Button(root, text="Load Image", command=setThreshold).pack()
 
-        root.mainloop()
+        Button(root, text="Browse", command=open_file).grid(row=2, column=column, columnspan=3)
+        # Button(root, text="Browse", command=open_file).pack()
+        lastloaded_text = StringVar()
+        Label(root, textvariable=lastloaded_text).grid(row=8, column=column + 1, columnspan=3)
+        # Label(root, textvariable=lastloaded_text).pack()
+
+        main_root.mainloop()
     except:
         pass
     finally:
@@ -534,4 +560,3 @@ def GUI():
 
 if __name__ == "__main__":
     GUI()
-

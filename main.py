@@ -309,7 +309,7 @@ def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part=
     stones_embedment_percentage, lst = embedment(top_layer, min_maxes)
     overlap_img = overlap(img_copy, top_layer).copy()
     top_layer = image_conversion(top_layer, cv2.COLOR_GRAY2RGB)
-    report = []
+    report = [0]
     for i, j in enumerate(stones_embedment_percentage):
         x, y = 0, 0
         for m, n in boarders[i]:
@@ -318,9 +318,11 @@ def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part=
         x //= len(boarders[i])
         y //= len(boarders[i])
         j *= 100
+        report[0] += j
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         overlap_img = write_on_image(overlap_img, (y - 20, x), str(j)[:5] + "%")
         report.append(str(i + 1) + " : " + str(j)[:5] + "%")
+    report[0] = "Average embedment: " + str(report[0]/(len(report)-1)) + "%"
     show_image("result", top_layer)
 
     # writing the processed image to the file
@@ -379,7 +381,7 @@ def GUI():
             filepath = ""
             if file:
                 filepath = os.path.abspath(file.name)
-                if os.stat(filepath).st_size / 1024**2 > 1.3 or filepath[-4:] != ".png":
+                if os.stat(filepath).st_size / 1024 ** 2 > 1.3 or filepath[-4:] != ".png":
                     text.set(
                         "                   Please select the file using the browse option (file size should be less than 1MB/1024KB and in png format)                  ")
                     filepath = ""
@@ -500,7 +502,7 @@ def GUI():
                 except:
                     pass
 
-                res = Text(root, height=len(report)+1)
+                res = Text(root, height=len(report) + 1)
                 res.insert(END, stringreport, "result")
                 res.configure(state=DISABLED)
                 res.tag_config("result", justify='center')

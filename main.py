@@ -322,7 +322,7 @@ def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part=
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         overlap_img = write_on_image(overlap_img, (y - 20, x), str(j)[:5] + "%")
         report.append(str(i + 1) + " : " + str(j)[:5] + "%")
-    report[0] = "Average embedment: " + str(report[0]/(len(report)-1)) + "%"
+    report[0] = "Average embedment: " + str(report[0]/(len(report)-1))[:5] + "%"
     show_image("result", top_layer)
 
     # writing the processed image to the file
@@ -468,8 +468,9 @@ def GUI():
                 global label2
                 global final_img
                 global loaded_img
-                global stone_holding_part
+                global stone_holding_part, analyse_button
                 global img_copy, stones_coordinates, boarders, min_maxes, top_layer, result_button, res
+                analyse_button.destroy()
                 threshold = [float(inptext_stone_threshold.get()), float(inptext_adhesive_threshold.get())]
                 alpha = float(inptext_intensity.get().strip())
                 beta = float(inptext_reduction.get().strip())

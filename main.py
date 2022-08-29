@@ -1,3 +1,19 @@
+import warnings
+
+warnings.filterwarnings('ignore', '.*', )
+
+# checking if packages are available
+import pip
+
+try:
+    import cv2
+except:
+    pip.main(['install', "opencv-contrib-python"])
+try:
+    from PIL import ImageTk, Image
+except:
+    pip.main(['install', "Pillow"])
+
 import cv2
 import numpy as np
 import sys
@@ -6,10 +22,6 @@ from tkinter import *
 from tkinter import filedialog, ttk
 from PIL import ImageTk, Image
 from datetime import datetime
-
-import warnings
-
-warnings.filterwarnings('ignore', '.*', )
 
 sys.setrecursionlimit(100000000)
 
@@ -322,7 +334,7 @@ def main(img, threshold=[20.0, 27.0], alpha=3.0, beta=-10.0, stone_holding_part=
         top_layer = write_on_image(top_layer, (y - 20, x), str(j)[:5] + "%")
         overlap_img = write_on_image(overlap_img, (y - 20, x), str(j)[:5] + "%")
         report.append(str(i + 1) + " : " + str(j)[:5] + "%")
-    report[0] = "Average embedment: " + str(report[0]/(len(report)-1))[:5] + "%"
+    report[0] = "Average embedment: " + str(report[0] / (len(report) - 1))[:5] + "%"
     show_image("result", top_layer)
 
     # writing the processed image to the file
